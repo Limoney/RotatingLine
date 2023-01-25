@@ -1,0 +1,128 @@
+<style>
+body
+{
+	background-color: #34495e;
+	margin: 0;
+	padding: 0;
+}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/p5@1.0.0/lib/p5.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.0.0/addons/p5.sound.min.js" charset="utf-8"></script>
+
+<script>
+let origin;
+let angle = 0;
+let points = [];
+let point_cnt = 1;
+let line_start;
+let line_end;
+let line_len_h;
+let click;
+let rotation_speed = 0.005;
+let canvas;
+
+function preload()
+{
+	click = loadSound("click.mp3");
+	click.setVolume(0.1);
+}
+
+function setup()
+{
+	canvas = createCanvas(800,800);
+	resize();
+	ellipseMode(CENTER);
+	//angleMode(DEGREES);
+	line_len_h = width*2;
+	for(let i=0;i<point_cnt;i++)
+	{
+		points.push(new Point(p5.Vector.random2D().setMag(random(0,width/2))));
+	}
+	origin = random(points);
+	origin.isOrigin = true;
+	points.splice(points.indexOf(origin),1)
+	line_start = (createVector(0,-line_len_h));
+	line_end = (createVector(0,line_len_h));
+
+	window.addEventListener("resize",resize);
+}
+
+function resize()
+{
+	let ww = document.documentElement.clientWidth || document.body.clientWidth;
+	var wh = window.innerHeight
+|| document.documentElement.clientHeight
+|| document.body.clientHeight;
+	canvas.resize(ww,wh);
+}
+
+function draw()
+{
+	translate(width/2,height/2);
+	background(51);
+	stroke(255,150,100);
+	strokeWeight(4);
+	line_start.x = cos(angle)*line_len_h+origin.pos.x;
+	line_start.y = sin(angle)*line_len_h+origin.pos.y;
+	line_end.x = -cos(angle)*line_len_h+origin.pos.x;
+	line_end.y = -sin(angle)*line_len_h+origin.pos.y;
+	line(line_start.x,line_start.y,line_end.x,line_end.y);
+	for(let i=0;i<points.length;i++)
+	{
+		if(points.indexOf(origin)==i) 	continue;
+		let ac = line_end.copy().sub(origin.pos);
+		let ab = points[i].pos.copy().sub(origin.pos);
+		let ad = project(ab,ac).add(origin.pos);
+		if(dist(line_end.x,line_end.y,ad.x,ad.y)<8)
+		{
+			origin.isOrigin = false;
+			points.push(origin);
+			origin = points[i];
+			origin.isOrigin = true;
+			points.splice(i,1);
+			angle+=rotation_speed;
+			//if(!click.isPlaying())
+				click.play();
+			break;
+		}
+		//line(origin.pos.x,origin.pos.y,ad.x,ad.y);
+		points[i].show();
+	}
+	origin.show();
+	angle+=rotation_speed;
+}
+//https://stackoverflow.com/questions/1073336/circle-line-segment-collision-detection-algorithm
+
+function project(v1,v2)
+{
+	let dot = v1.dot(v2);
+	let mag = v1.mag()*v1.mag();
+	if(mag==0) mag = 1;
+	return v1.copy().mult(dot/mag);
+}
+
+function mouseClicked() 
+{
+	points.push( new Point( createVector(mouseX-width/2,mouseY-height/2) ) );
+}
+
+class Point
+{
+	constructor(v)
+	{
+		this.pos = v;
+		this.color = "#abc";
+		this.isOrigin = false;
+	}
+
+	show()
+	{
+		strokeWeight(1);
+		stroke(255);
+		this.isOrigin ? fill("#8e44ad") : fill(this.color)
+		ellipse(this.pos.x,this.pos.y,8,8);
+	}
+}
+
+
+</script>
